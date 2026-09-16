@@ -102,7 +102,7 @@ def create_app():
     os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "819BR=!Qx~=us6Bs]ikN")
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "your secret key")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
         "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
     )
