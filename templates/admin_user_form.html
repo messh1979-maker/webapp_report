@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ 'ویرایش کاربر' if user else 'کاربر جدید' }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header bg-white"><h5 class="mb-0">{{ 'ویرایش کاربر' if user else 'ایجاد کاربر جدید' }}</h5></div>
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">نام کاربری {% if not user %}<span class="text-danger">*</span>{% endif %}</label>
+          {% if user %}
+            <input type="text" class="form-control" value="{{ user.username }}" disabled>
+          {% else %}
+            <input type="text" name="username" class="form-control" required>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">رمز عبور {% if not user %}<span class="text-danger">*</span>{% endif %}</label>
+          <input type="password" name="password" class="form-control" placeholder="{{ 'خالی بگذارید تا تغییر نکند' if user else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">نام و نام‌خانوادگی</label>
+          <input type="text" name="full_name" class="form-control" value="{{ user.full_name if user else '' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">شماره تماس</label>
+          <input type="text" name="phone" class="form-control" value="{{ user.phone if user else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">نقش کاربر</label>
+          <select name="role" class="form-select" id="roleSelect" onchange="toggleCity()">
+            <option value="user" {{ 'selected' if user and not user.is_admin else '' }}>کاربر شهرستان (دسترسی محدود)</option>
+            <option value="admin" {{ 'selected' if user and user.is_admin else '' }}>ادمین (دسترسی کامل)</option>
+          </select>
+        </div>
+        <div class="col-md-6" id="cityField">
+          <label class="form-label">شهرستان (فیلد کلید دسترسی)</label>
+          <input type="text" name="city" class="form-control" value="{{ user.city if user else '' }}"
+                 placeholder="مثلاً: مرکزی، اراک، ساوه، ...">
+        </div>
+        {% if user %}
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {{ 'checked' if user.is_active_flag else '' }}>
+            <label class="form-check-label" for="isActive">حساب کاربری فعال باشد</label>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> ذخیره</button>
+        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleCity(){
+  const role = document.getElementById('roleSelect').value;
+  document.getElementById('cityField').style.display = (role === 'admin') ? 'none' : 'block';
+}
+document.addEventListener('DOMContentLoaded', toggleCity);
+</script>
+{% endblock %}

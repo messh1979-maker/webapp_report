@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}داشبورد{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">داشبورد کلی</h4>
+  {% if current_user.is_admin %}
+    <span class="text-muted">نمایش داده‌های همه شهرستان‌ها (دسترسی ادمین)</span>
+  {% else %}
+    <span class="text-muted">نمایش داده‌های شهرستان: <b>{{ current_user.city }}</b></span>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  {% for key, meta in tables.items() %}
+  <div class="col-md-6 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">{{ meta.title }}</h6>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="display-6 fw-bold text-primary">{{ counts[key] }}</span>
+          <i class="fa-solid fa-table fa-2x text-secondary opacity-25"></i>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+          <a href="{{ url_for('table_list', table_key=key) }}" class="btn btn-sm btn-outline-primary flex-fill">مشاهده لیست</a>
+          <a href="{{ url_for('table_new', table_key=key) }}" class="btn btn-sm btn-primary flex-fill">ثبت جدید</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row mt-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">نمای کلی ثبت‌ها</h6>
+        <a href="{{ url_for('reports') }}" class="btn btn-sm btn-outline-primary">
+          <i class="fa-solid fa-chart-bar"></i> گزارش کامل
+        </a>
+      </div>
+      <div class="card-body"><canvas id="dashChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0">سهم هر بخش</h6></div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="dashDoughnut"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const COLORS = {
+  water:      {bg: 'rgba(54,162,235,0.7)',  border: 'rgb(54,162,235)'},
+  electricity:{bg: 'rgba(255,206,86,0.7)',   border: 'rgb(255,206,86)'},
+  gas:        {bg: 'rgba(255,99,132,0.7)',   border: 'rgb(255,99,132)'},
+  clean_energy:{bg: 'rgba(75,192,192,0.7)',  border: 'rgb(75,192,192)'}
+};
+const LABELS_FA = {
+  water: 'آب', electricity: 'برق', gas: 'گاز', clean_energy: 'انرژی پاک'
+};
+const keys = [{% for key in tables.keys() %}'{{ key }}',{% endfor %}];
+const counts = {
+  {% for key, meta in tables.items() %}'{{ key }}': {{ counts[key] }},{% endfor %}
+};
+const ctx = document.getElementById('dashChart');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: keys.map(k => LABELS_FA[k]),
+    datasets: [{
+      label: 'تعداد رکورد',
+      data: keys.map(k => counts[k]),
+      backgroundColor: keys.map(k => COLORS[k].bg),
+      borderColor: keys.map(k => COLORS[k].border),
+      borderWidth: 1
+    }]
+  },
+  options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
+});
+new Chart(document.getElementById('dashDoughnut'), {
+  type: 'doughnut',
+  data: {
+    labels: keys.map(k => LABELS_FA[k]),
+    datasets: [{
+      data: keys.map(k => counts[k]),
+      backgroundColor: keys.map(k => COLORS[k].bg),
+      borderColor: keys.map(k => COLORS[k].border),
+      borderWidth: 2
+    }]
+  },
+  options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
+});
+</script>
+{% endblock %}

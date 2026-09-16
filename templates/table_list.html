@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ meta.title }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">{{ meta.title }}</h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('table_export', table_key=table_key) }}" class="btn btn-outline-success">
+      <i class="fa-solid fa-file-excel"></i> خروجی اکسل
+    </a>
+    <a href="{{ url_for('table_new', table_key=table_key) }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> ثبت رکورد جدید
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>شهرستان</th>
+          {% for fname, label, ftype in meta.fields %}
+            <th>{{ label }}</th>
+          {% endfor %}
+          <th>ثبت‌کننده</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><span class="badge badge-city">{{ r.city }}</span></td>
+          {% for fname, label, ftype in meta.fields %}
+            <td>{{ (r|attr(fname)) if (r|attr(fname)) is not none else '-' }}</td>
+          {% endfor %}
+          <td class="text-muted small">{{ r.created_by.full_name if r.created_by else '-' }}</td>
+          <td class="text-nowrap">
+            <a href="{{ url_for('table_edit', table_key=table_key, record_id=r.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <form method="post" action="{{ url_for('table_delete', table_key=table_key, record_id=r.id) }}"
+                  class="d-inline" onsubmit="return confirm('آیا از حذف این رکورد مطمئن هستید؟');">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="{{ meta.fields|length + 4 }}" class="text-center text-muted py-4">رکوردی ثبت نشده است.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

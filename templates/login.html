@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}ورود به سامانه{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5 col-lg-4">
+    <div class="card shadow-sm p-4 mt-5">
+      <div class="text-center mb-3">
+        <i class="fa-solid fa-database fa-2x text-primary"></i>
+        <h5 class="mt-2">ورود به سامانه بازبینه سنجه‌های انرژی</h5>
+      </div>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">نام کاربری</label>
+          <input type="text" name="username" class="form-control" required autofocus>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">رمز عبور</label>
+          <input type="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">ورود</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

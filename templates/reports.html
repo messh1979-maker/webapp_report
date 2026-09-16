@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}گزارش‌گیری نموداری{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0"><i class="fa-solid fa-chart-bar"></i> گزارش‌گیری نموداری و مقایسه‌ای</h4>
+  {% if current_user.is_admin %}
+    <span class="text-muted">مقایسه همه شهرستان‌ها</span>
+  {% else %}
+    <span class="text-muted">شهرستان: <b>{{ current_user.city }}</b></span>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-4" id="summary-cards"></div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0"> مقایسه تعداد رکوردها بر اساس شهرستان</h6></div>
+      <div class="card-body"><canvas id="chartCityComparison"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0">سهم هر بخش از کل رکوردها</h6></div>
+      <div class="card-body d-flex align-items-center justify-content-center"><canvas id="chartDistribution"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">مصرف برق — مقایسه شهری (kWh)</h6></div>
+      <div class="card-body"><canvas id="chartElectricity"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">تولید انرژی پاک — مقایسه شهری (kWh)</h6></div>
+      <div class="card-body"><canvas id="chartCleanEnergy"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">توزیع درصدی رکوردها بر اساس شهرستان</h6></div>
+      <div class="card-body"><canvas id="chartPercentByCity"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">ترکیب نوع انرژی در هر شهرستان</h6></div>
+      <div class="card-body"><canvas id="chartStacked"></canvas></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const COLORS = {
+  water:      {bg: 'rgba(54,162,235,0.7)',  border: 'rgb(54,162,235)'},
+  electricity:{bg: 'rgba(255,206,86,0.7)',   border: 'rgb(255,206,86)'},
+  gas:        {bg: 'rgba(255,99,132,0.7)',   border: 'rgb(255,99,132)'},
+  clean_energy:{bg: 'rgba(75,192,192,0.7)',  border: 'rgb(75,192,192)'}
+};
+const LABELS_FA = {
+  water: 'آب', electricity: 'برق', gas: 'گاز', clean_energy: 'انرژی پاک'
+};
+
+fetch('{{ url_for("reports_data") }}')
+  .then(r => r.json())
+  .then(data => {
+    const {cities, counts_by_city, totals, electricity_reduction, clean_energy_production} = data;
+    const keys = Object.keys(counts_by_city);
+
+    // --- Summary Cards ---
+    const cardsEl = document.getElementById('summary-cards');
+    const totalAll = Object.values(totals).reduce((a,b)=>a+b, 0);
+    cardsEl.innerHTML = `<div class="col-md-3"><div class="card stat-card shadow-sm text-center p-3"><div class="text-muted mb-1">کل رکوردها</div><div class="display-6 fw-bold text-primary">${totalAll}</div></div></div>`;
+    keys.forEach(k => {
+      cardsEl.innerHTML += `<div class="col-md-3"><div class="card stat-card shadow-sm text-center p-3"><div class="text-muted mb-1">${LABELS_FA[k]}</div><div class="display-6 fw-bold" style="color:${COLORS[k].border}">${totals[k]}</div></div></div>`;
+    });
+
+    // --- Chart 1: City Comparison (Grouped Bar) ---
+    new Chart(document.getElementById('chartCityComparison'), {
+      type: 'bar',
+      data: {
+        labels: cities,
+        datasets: keys.map(k => ({
+          label: LABELS_FA[k],
+          data: cities.map(c => counts_by_city[k][c] || 0),
+          backgroundColor: COLORS[k].bg,
+          borderColor: COLORS[k].border,
+          borderWidth: 1
+        }))
+      },
+      options: {
+        responsive: true,
+        plugins: {legend: {position: 'top'}},
+        scales: {y: {beginAtZero: true, title: {display: true, text: 'تعداد رکورد'}}}
+      }
+    });
+
+    // --- Chart 2: Distribution Doughnut ---
+    new Chart(document.getElementById('chartDistribution'), {
+      type: 'doughnut',
+      data: {
+        labels: keys.map(k => LABELS_FA[k]),
+        datasets: [{
+          data: keys.map(k => totals[k]),
+          backgroundColor: keys.map(k => COLORS[k].bg),
+          borderColor: keys.map(k => COLORS[k].border),
+          borderWidth: 2
+        }]
+      },
+      options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
+    });
+
+    // --- Chart 3: Electricity Reduction ---
+    const elCities = Object.keys(electricity_reduction);
+    new Chart(document.getElementById('chartElectricity'), {
+      type: 'bar',
+      data: {
+        labels: elCities,
+        datasets: [{
+          label: 'کاهش مصرف برق (kWh)',
+          data: elCities.map(c => electricity_reduction[c].total),
+          backgroundColor: COLORS.electricity.bg,
+          borderColor: COLORS.electricity.border,
+          borderWidth: 1
+        }]
+      },
+      options: {responsive: true, scales: {y: {beginAtZero: true}}}
+    });
+
+    // --- Chart 4: Clean Energy Production ---
+    const ceCities = Object.keys(clean_energy_production);
+    new Chart(document.getElementById('chartCleanEnergy'), {
+      type: 'bar',
+      data: {
+        labels: ceCities,
+        datasets: [{
+          label: 'تولید انرژی پاک (kWh)',
+          data: ceCities.map(c => clean_energy_production[c].total),
+          backgroundColor: COLORS.clean_energy.bg,
+          borderColor: COLORS.clean_energy.border,
+          borderWidth: 1
+        }]
+      },
+      options: {responsive: true, scales: {y: {beginAtZero: true}}}
+    });
+
+    // --- Chart 5: Percent by City (Horizontal Bar) ---
+    new Chart(document.getElementById('chartPercentByCity'), {
+      type: 'bar',
+      data: {
+        labels: cities,
+        datasets: keys.map(k => ({
+          label: LABELS_FA[k],
+          data: cities.map(c => {
+            const cityTotal = keys.reduce((s, kk) => s + (counts_by_city[kk][c] || 0), 0);
+            return cityTotal ? Math.round((counts_by_city[k][c] || 0) / cityTotal * 100) : 0;
+          }),
+          backgroundColor: COLORS[k].bg,
+          borderColor: COLORS[k].border,
+          borderWidth: 1
+        }))
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        scales: {x: {stacked: true, max: 100, title: {display: true, text: 'درصد'}}, y: {stacked: true}},
+        plugins: {legend: {position: 'top'}}
+      }
+    });
+
+    // --- Chart 6: Stacked by City ---
+    new Chart(document.getElementById('chartStacked'), {
+      type: 'bar',
+      data: {
+        labels: cities,
+        datasets: keys.map(k => ({
+          label: LABELS_FA[k],
+          data: cities.map(c => counts_by_city[k][c] || 0),
+          backgroundColor: COLORS[k].bg,
+          borderColor: COLORS[k].border,
+          borderWidth: 1
+        }))
+      },
+      options: {
+        responsive: true,
+        scales: {x: {stacked: true}, y: {stacked: true, beginAtZero: true}},
+        plugins: {legend: {position: 'top'}}
+      }
+    });
+  });
+</script>
+{% endblock %}

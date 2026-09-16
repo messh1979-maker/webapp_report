@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ 'ویرایش' if record else 'ثبت جدید' }} - {{ meta.title }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header bg-white">
+    <h5 class="mb-0">{{ 'ویرایش رکورد' if record else 'ثبت رکورد جدید' }} — {{ meta.title }}</h5>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label class="form-label">شهرستان <span class="text-danger">*</span></label>
+          {% if current_user.is_admin %}
+            <input type="text" name="city" class="form-control" required
+                   value="{{ record.city if record else '' }}" placeholder="مثلاً: مرکزی، اراک، ...">
+          {% else %}
+            <input type="text" class="form-control" value="{{ current_user.city }}" disabled>
+            <input type="hidden" name="city" value="{{ current_user.city }}">
+            <div class="form-text">شما فقط مجاز به ثبت اطلاعات شهرستان خود هستید.</div>
+          {% endif %}
+        </div>
+
+        {% for fname, label, ftype in meta.fields %}
+        {% if ftype != 'auto_zero' %}
+        <div class="col-md-6">
+          <label class="form-label">{{ label }}</label>
+          {% if ftype == 'textarea' %}
+            <textarea name="{{ fname }}" class="form-control" rows="2">{{ record|attr(fname) if record else '' }}</textarea>
+          {% elif ftype == 'number' %}
+            <input type="number" step="any" name="{{ fname }}" class="form-control"
+                   value="{{ record|attr(fname) if record and (record|attr(fname)) is not none else '' }}">
+          {% else %}
+            <input type="text" name="{{ fname }}" class="form-control"
+                   value="{{ record|attr(fname) if record else '' }}">
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="col-md-6">
+          <label class="form-label">{{ label }}</label>
+          <input type="text" class="form-control" value="۰" disabled>
+          <div class="form-text">این مقدار دیگر از طریق فرم دریافت نمی‌شود و به‌صورت خودکار صفر ثبت می‌شود.</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        {% if table_key == 'clean_energy' %}
+        <div class="col-12">
+          <hr>
+          <label class="form-label fw-bold">شناسه قبض انشعاب‌های ساختمان‌های تابعه (حداکثر ۱۰ انشعاب)</label>
+          <div class="row g-2">
+            {% for i in range(1, 11) %}
+            {% set existing = (record.buildings|selectattr('slot_number','equalto', i)|first) if record else none %}
+            <div class="col-md-3">
+              <div class="input-group input-group-sm mb-1">
+                <span class="input-group-text">انشعاب {{ i }}</span>
+                <input type="text" name="building_receipt_{{ i }}" class="form-control"
+                       value="{{ existing.receipt_id if existing else '' }}">
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> ذخیره</button>
+        <a href="{{ url_for('table_list', table_key=table_key) }}" class="btn btn-outline-secondary">انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
