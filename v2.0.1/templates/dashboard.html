@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}داشبورد{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 page-heading"><h4 class="mb-0">داشبورد کلی</h4><span class="text-muted">{% if current_user.can_view_all_cities %}نمایش همه شهرها{% else %}شهر: <b>{{ current_user.city_name }}</b>{% endif %}</span></div>
+{% set cards = [
+  ('buildings','ساختمان‌ها','fa-building','primary',url_for('buildings')),
+  ('electricity','قبوض برق','fa-bolt','warning',url_for('consumptions',utility='electricity')),
+  ('water','قبوض آب','fa-droplet','info',url_for('consumptions',utility='water')),
+  ('gas','قبوض گاز','fa-fire-flame-simple','danger',url_for('consumptions',utility='gas')),
+  ('production','تولید برق','fa-solar-panel','success',url_for('production_list')),
+  ('telecom','مصارف مخابرات','fa-phone','secondary',url_for('telecom_usage_list'))
+] %}
+<div class="row g-3">{% for key,label,icon,color,link in cards if module_allowed(key) %}<div class="col-6 col-lg-4"><a href="{{ link }}" class="text-decoration-none"><div class="card stat-card shadow-sm h-100"><div class="card-body"><h6 class="text-muted">{{ label }}</h6><div class="d-flex justify-content-between align-items-center"><span class="display-6 fw-bold text-{{ color }}">{{ counts[key] }}</span><i class="fa-solid {{ icon }} fa-2x text-secondary opacity-25"></i></div></div></div></a></div>{% endfor %}</div>
+{% if module_allowed('reports') %}<div class="card shadow-sm mt-4"><div class="card-header bg-white d-flex justify-content-between align-items-center"><h6 class="mb-0">نمای کلی رکوردها</h6><a href="{{ url_for('reports') }}" class="btn btn-sm btn-outline-primary">گزارش کامل</a></div><div class="card-body" style="min-height:280px"><canvas id="dashChart"></canvas></div></div>{% endif %}
+{% endblock %}
+{% block scripts %}{% if module_allowed('reports') %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script>
+const dashboardData={{ counts|tojson }};
+const colorMap={primary:'#0d6efd',warning:'#ffc107',info:'#0dcaf0',danger:'#dc3545',success:'#198754',secondary:'#6c757d'};
+const modules=[
+{% if module_allowed('buildings') %}{key:'buildings',label:'ساختمان‌ها',color:colorMap.primary},{% endif %}
+{% if module_allowed('electricity') %}{key:'electricity',label:'برق',color:colorMap.warning},{% endif %}
+{% if module_allowed('water') %}{key:'water',label:'آب',color:colorMap.info},{% endif %}
+{% if module_allowed('gas') %}{key:'gas',label:'گاز',color:colorMap.danger},{% endif %}
+{% if module_allowed('production') %}{key:'production',label:'تولید',color:colorMap.success},{% endif %}
+{% if module_allowed('telecom') %}{key:'telecom',label:'مخابرات',color:colorMap.secondary},{% endif %}
+];
+new Chart(document.getElementById('dashChart'),{type:'bar',data:{labels:modules.map(x=>x.label),datasets:[{label:'تعداد رکورد',data:modules.map(x=>dashboardData[x.key]),backgroundColor:modules.map(x=>x.color)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+</script>{% endif %}{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}ورود به سامانه{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6 col-lg-4"><div class="card shadow-sm p-4 mt-5">
+  <div class="text-center mb-3"><i class="fa-solid fa-database fa-2x text-primary"></i><h5 class="mt-2">ورود به سامانه بازبینه سنجه‌های انرژی</h5></div>
+  <form method="post" autocomplete="on">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3"><label class="form-label required" for="username">نام کاربری</label><input id="username" type="text" name="username" class="form-control" maxlength="80" autocomplete="username" required autofocus value="{{ login_username|default('') }}"></div>
+    <div class="mb-3"><label class="form-label required" for="password">رمز عبور</label><input id="password" type="password" name="password" class="form-control" autocomplete="current-password" required></div>
+    <button type="submit" class="btn btn-primary w-100">ورود امن</button>
+  </form>
+  <div class="alert {{ 'alert-danger' if remaining_attempts == 0 else 'alert-info' }} mt-3 mb-2 py-2 text-center" role="status">
+    <i class="fa-solid fa-shield-halved"></i>
+    تلاش باقی‌مانده: <strong>{{ remaining_attempts|default(5) }}</strong> از {{ max_login_attempts|default(5) }}
+  </div>
+  <div class="form-text">پس از ۵ تلاش ناموفق، ورود به‌مدت ۱۵ دقیقه قفل می‌شود.</div>
+</div></div></div>
+{% endblock %}
